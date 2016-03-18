@@ -46,6 +46,7 @@ Renderer::Renderer(const QSurfaceFormat &format)
     m_context->create();
 
     m_backgroundColor = QColor::fromRgbF(0.1f, 0.1f, 0.2f, 1.0f);
+    m_detalizationLevel = 200;
 }
 
 void Renderer::setAnimating(LogoWindow *window, bool animating)
@@ -160,15 +161,14 @@ void Renderer::createGeometry()
 void Renderer::createSphere()
 {
     const qreal r = 0.30;
-    const int NumSectors = 200;
 
-    for (int i = 0; i < NumSectors; ++i) {
-        qreal angle1 = i * 360. / NumSectors;
-        qreal angle2 = (i + 1) * 360. / NumSectors;
+    for (int i = 0; i < m_detalizationLevel; ++i) {
+        qreal angle1 = i * 360. / m_detalizationLevel;
+        qreal angle2 = (i + 1) * 360. / m_detalizationLevel;
 
-        for (int j = 0; j < NumSectors/2; ++j) {
-            qreal angle3 = j * 360. / NumSectors;
-            qreal angle4 = (j + 1) * 360. / NumSectors;
+        for (int j = 0; j < m_detalizationLevel/2; ++j) {
+            qreal angle3 = j * 360. / m_detalizationLevel;
+            qreal angle4 = (j + 1) * 360. / m_detalizationLevel;
 
             QVector3D p1 = fromSph(r, angle1, angle3);
             QVector3D p2 = fromSph(r, angle1, angle4);
@@ -181,12 +181,25 @@ void Renderer::createSphere()
             QVector2D t4;
 
             // we want texture to be on the square 60 degrees by 60 degrees
-#if 0
-                t1 = (QVector2D(angle1, angle3) - origin)/qDegreesToRadians(60.);
-                t2 = (QVector2D(angle1, angle4) - origin)/qDegreesToRadians(60.);
-                t3 = (QVector2D(angle2, angle4) - origin)/qDegreesToRadians(60.);
-                t4 = (QVector2D(angle2, angle3) - origin)/qDegreesToRadians(60.);
-#endif
+            int fromLevel = m_detalizationLevel / 6;
+            int toLevel = 2 * m_detalizationLevel / 6;
+            int totalLevels = toLevel - fromLevel;
+            QVector2D origin(fromLevel, fromLevel);
+            if ((i >= fromLevel) && (i < toLevel)
+                    && (j >= fromLevel) && (j < toLevel)) {
+
+                t1 = (QVector2D(i, j) - origin) / totalLevels;
+                t2 = (QVector2D(i, j + 1) - origin) / totalLevels;
+                t3 = (QVector2D(i + 1, j + 1) - origin) / totalLevels;
+                t4 = (QVector2D(i + 1, j) - origin)  /totalLevels;
+
+                // Flip x coordinate because direction we build 
+                // sphere is right to left
+                t1.setX(1 - t1.x());
+                t2.setX(1 - t2.x());
+                t3.setX(1 - t3.x());
+                t4.setX(1 - t4.x());
+            }
 
             QVector3D d1 = p1 - p2;
             QVector3D d2 = p3 - p2;
@@ -238,15 +251,13 @@ void Renderer::createHorns()
     createHorn(transform2);
 }
 
-void Renderer::createHorn(QMatrix4x4 transform, int details)
+void Renderer::createHorn(QMatrix4x4 transform)
 {
-    const qreal Pi = 3.14159f;
-    const int NumSectors = details;
     const qreal a = 7;
 
-    for (int i = 0; i < NumSectors; ++i) {
-        qreal angle1 = (i * 2 * Pi) / NumSectors;
-        qreal angle2 = ((i + 1) * 2 * Pi) / NumSectors;
+    for (int i = 0; i < m_detalizationLevel; ++i) {
+        qreal angle1 = qDegreesToRadians((i * 360.0f) / m_detalizationLevel);
+        qreal angle2 = qDegreesToRadians(((i + 1) * 360.0f) / m_detalizationLevel);
 
         qreal r = 0;
         const qreal r_step = 0.01;
@@ -265,16 +276,11 @@ void Renderer::createHorn(QMatrix4x4 transform, int details)
             p3 = transform.map(p3);
             p4 = transform.map(p4);
 
-            QVector3D n;
-            if (r1 == 0) {
-                QVector3D d1 = p1 - p2;
-                QVector3D d2 = p3 - p1;
-                d1.normalize();
-                d2.normalize();
-                n = QVector3D::normal(d1, d2);
-            }
-            else
-                n = QVector3D::normal(p1 - p2, p3 - p2);
+            QVector3D d1 = p1 - p2;
+            QVector3D d2 = p3 - p1;
+            d1.normalize();
+            d2.normalize();
+            QVector3D n = QVector3D::normal(d1, d2);
 
             vertices << p1;
             vertices << p2;
@@ -292,7 +298,7 @@ void Renderer::createHorn(QMatrix4x4 transform, int details)
             normals << n;
             normals << n;
 
-            // Out of texture
+            // Trick: pint 0, 0 should be transparent in texture
             texcoords << QVector2D(0, 0);
             texcoords << QVector2D(0, 0);
             texcoords << QVector2D(0, 0);

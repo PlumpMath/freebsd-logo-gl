@@ -55,7 +55,7 @@ private:
     void createGeometry();
     void createSphere();
     void createHorns();
-    void createHorn(QMatrix4x4 transform, int details = 100);
+    void createHorn(QMatrix4x4 transform);
     QVector3D fromSph(qreal r, qreal theta, qreal phi);
 
     QVector<QVector3D> vertices;
@@ -76,6 +76,7 @@ private:
     LogoWindow *m_surface;
     QColor m_backgroundColor;
     QOpenGLTexture *m_texture;
+    int m_detalizationLevel;
 };
 
 class LogoWindow : public QWindow
