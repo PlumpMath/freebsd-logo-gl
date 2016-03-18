@@ -113,9 +113,6 @@ void Renderer::render()
     f->glViewport(0, 0, viewSize.width() * m_surface->devicePixelRatio(), viewSize.height() * m_surface->devicePixelRatio());
     f->glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     f->glClearColor(m_backgroundColor.redF(), m_backgroundColor.greenF(), m_backgroundColor.blueF(), m_backgroundColor.alphaF());
-    // f->glFrontFace(GL_CW);
-    // f->glCullFace(GL_FRONT);
-    // f->glEnable(GL_CULL_FACE);
     f->glEnable(GL_DEPTH_TEST);
 
     m_texture->bind();
@@ -133,9 +130,6 @@ void Renderer::render()
     QMatrix4x4 modelview;
     modelview.rotate(90, -1.0f, 0.0f, 0.0f);
     modelview.rotate((float)m_frame, 0.0f, 0.0f, -1.0f);
-    // modelview.rotate((float)m_frame, 1.0f, 0.0f, 0.0f);
-    // modelview.rotate((float)m_frame, 0.0f, 0.0f, 1.0f);
-    // modelview.translate(0.0f, -0.2f, 0.0f);
 
     m_program->setUniformValue(matrixUniform, modelview);
     m_program->setUniformValue(colorUniform, QColor(200, 0, 0, 255));
@@ -147,8 +141,6 @@ void Renderer::render()
 
     ++m_frame;
 
-    // m_vbo.release();
-    // m_program->release();
     QTimer::singleShot(0, this, SLOT(render()));
 }
 
@@ -167,20 +159,16 @@ void Renderer::createGeometry()
 
 void Renderer::createSphere()
 {
-    const qreal Pi = 3.14159f;
     const qreal r = 0.30;
     const int NumSectors = 200;
 
-    // QMatrix4x4 rotation;
-    // rotation.rotate(90, 1.0f, 0.0f, 0.0f);
-
     for (int i = 0; i < NumSectors; ++i) {
-        qreal angle1 = (i * 2 * Pi) / NumSectors;
-        qreal angle2 = ((i + 1) * 2 * Pi) / NumSectors;
+        qreal angle1 = i * 360. / NumSectors;
+        qreal angle2 = (i + 1) * 360. / NumSectors;
 
         for (int j = 0; j < NumSectors/2; ++j) {
-            qreal angle3 = (j * 2 * Pi) / NumSectors;
-            qreal angle4 = ((j + 1) * 2 * Pi) / NumSectors;
+            qreal angle3 = j * 360. / NumSectors;
+            qreal angle4 = (j + 1) * 360. / NumSectors;
 
             QVector3D p1 = fromSph(r, angle1, angle3);
             QVector3D p2 = fromSph(r, angle1, angle4);
@@ -193,30 +181,18 @@ void Renderer::createSphere()
             QVector2D t4;
 
             // we want texture to be on the square 60 degrees by 60 degrees
-            if (qRadiansToDegrees(angle1) >= 60 && qRadiansToDegrees(angle1) <= 120 &&
-                qRadiansToDegrees(angle3) >= 60 && qRadiansToDegrees(angle3) <= 120) {
-
-                QVector2D origin(qDegreesToRadians(60.), qDegreesToRadians(60.));
-
-                
+#if 0
                 t1 = (QVector2D(angle1, angle3) - origin)/qDegreesToRadians(60.);
                 t2 = (QVector2D(angle1, angle4) - origin)/qDegreesToRadians(60.);
                 t3 = (QVector2D(angle2, angle4) - origin)/qDegreesToRadians(60.);
                 t4 = (QVector2D(angle2, angle3) - origin)/qDegreesToRadians(60.);
-            }
-
-            // p1 = p1 * rotation;
-            // p2 = p2 * rotation;
-            // p3 = p3 * rotation;
-            // p4 = p4 * rotation;
+#endif
 
             QVector3D d1 = p1 - p2;
             QVector3D d2 = p3 - p2;
             d1.normalize();
             d2.normalize();
             QVector3D n = QVector3D::normal(d1, d2);
-            // if (j + 1 == NumSectors/2) // p2 == p3
-                // n = QVector3D::normal(p1 - p4, p1 - p2);
 
             vertices << p1;
             vertices << p2;
@@ -330,6 +306,9 @@ void Renderer::createHorn(QMatrix4x4 transform, int details)
 
 QVector3D Renderer::fromSph(qreal r, qreal theta, qreal phi)
 {
+    theta = qDegreesToRadians(theta);
+    phi = qDegreesToRadians(phi);
+
     return QVector3D(r*qCos(theta)*qSin(phi),
         r*qSin(theta)*qSin(phi), r*qCos(phi));
 }
