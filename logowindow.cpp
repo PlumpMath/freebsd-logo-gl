@@ -67,8 +67,15 @@ void Renderer::initialize()
     m_program->link();
     m_program->bind();
 
+    m_texture = new QOpenGLTexture(QImage(":/pi.png"));
+
+    m_texture->setMinificationFilter(QOpenGLTexture::Linear);
+    m_texture->setMagnificationFilter(QOpenGLTexture::Linear);
+    m_texture->setWrapMode(QOpenGLTexture::ClampToBorder);
+
     vertexAttr = m_program->attributeLocation("vertex");
     normalAttr = m_program->attributeLocation("normal");
+    texcoordAttr = m_program->attributeLocation("texcoord");
     matrixUniform = m_program->uniformLocation("matrix");
     colorUniform = m_program->uniformLocation("sourceColor");
 
@@ -77,9 +84,11 @@ void Renderer::initialize()
     m_vbo.create();
     m_vbo.bind();
     const int verticesSize = vertices.count() * 3 * sizeof(GLfloat);
-    m_vbo.allocate(verticesSize * 2);
+    const int textcoordsSize = vertices.count() * 2 * sizeof(GLfloat);
+    m_vbo.allocate(verticesSize * 2 + textcoordsSize);
     m_vbo.write(0, vertices.constData(), verticesSize);
     m_vbo.write(verticesSize, normals.constData(), verticesSize);
+    m_vbo.write(verticesSize*2, texcoords.constData(), textcoordsSize);
     m_vbo.release();
 
     m_program->release();
@@ -109,24 +118,28 @@ void Renderer::render()
     // f->glEnable(GL_CULL_FACE);
     f->glEnable(GL_DEPTH_TEST);
 
+    m_texture->bind();
     m_program->bind();
     m_vbo.bind();
 
     m_program->enableAttributeArray(vertexAttr);
     m_program->enableAttributeArray(normalAttr);
+    m_program->enableAttributeArray(texcoordAttr);
     m_program->setAttributeBuffer(vertexAttr, GL_FLOAT, 0, 3);
     const int verticesSize = vertices.count() * 3 * sizeof(GLfloat);
     m_program->setAttributeBuffer(normalAttr, GL_FLOAT, verticesSize, 3);
+    m_program->setAttributeBuffer(texcoordAttr, GL_FLOAT, verticesSize*2, 2);
 
     QMatrix4x4 modelview;
     modelview.rotate(90, -1.0f, 0.0f, 0.0f);
-    modelview.rotate((float)m_frame, 0.0f, 0.0f, 1.0f);
+    modelview.rotate((float)m_frame, 0.0f, 0.0f, -1.0f);
     // modelview.rotate((float)m_frame, 1.0f, 0.0f, 0.0f);
     // modelview.rotate((float)m_frame, 0.0f, 0.0f, 1.0f);
     // modelview.translate(0.0f, -0.2f, 0.0f);
 
     m_program->setUniformValue(matrixUniform, modelview);
     m_program->setUniformValue(colorUniform, QColor(200, 0, 0, 255));
+    m_program->setUniformValue("texture", 0);
 
     f->glDrawArrays(GL_TRIANGLES, 0, vertices.size());
 
@@ -143,6 +156,7 @@ void Renderer::createGeometry()
 {
     vertices.clear();
     normals.clear();
+    texcoords.clear();
 
     createSphere();
     createHorns();
@@ -155,7 +169,7 @@ void Renderer::createSphere()
 {
     const qreal Pi = 3.14159f;
     const qreal r = 0.30;
-    const int NumSectors = 200;
+    const int NumSectors = 360*3;
 
     // QMatrix4x4 rotation;
     // rotation.rotate(90, 1.0f, 0.0f, 0.0f);
@@ -167,27 +181,58 @@ void Renderer::createSphere()
         for (int j = 0; j < NumSectors/2; ++j) {
             qreal angle3 = (j * 2 * Pi) / NumSectors;
             qreal angle4 = ((j + 1) * 2 * Pi) / NumSectors;
+
             QVector3D p1 = fromSph(r, angle1, angle3);
             QVector3D p2 = fromSph(r, angle1, angle4);
             QVector3D p3 = fromSph(r, angle2, angle4);
             QVector3D p4 = fromSph(r, angle2, angle3);
+
+            QVector2D t1;
+            QVector2D t2;
+            QVector2D t3;
+            QVector2D t4;
+
+            // we want texture to be on the square 60 degrees by 60 degrees
+            if (qRadiansToDegrees(angle1) >= 60 && qRadiansToDegrees(angle1) <= 120 &&
+                qRadiansToDegrees(angle3) >= 60 && qRadiansToDegrees(angle3) <= 120) {
+
+                QVector2D origin(qDegreesToRadians(60.), qDegreesToRadians(60.));
+
+                
+                t1 = (QVector2D(angle1, angle3) - origin)/qDegreesToRadians(60.);
+                t2 = (QVector2D(angle1, angle4) - origin)/qDegreesToRadians(60.);
+                t3 = (QVector2D(angle2, angle4) - origin)/qDegreesToRadians(60.);
+                t4 = (QVector2D(angle1, angle3) - origin)/qDegreesToRadians(60.);
+            }
 
             // p1 = p1 * rotation;
             // p2 = p2 * rotation;
             // p3 = p3 * rotation;
             // p4 = p4 * rotation;
 
-            QVector3D n = QVector3D::normal(p1 - p2, p3 - p2);
-            if (j + 1 == NumSectors/2) // p2 == p3
-                n = QVector3D::normal(p1 - p4, p1 - p2);
+            QVector3D d1 = p1 - p2;
+            QVector3D d2 = p3 - p2;
+            d1.normalize();
+            d2.normalize();
+            QVector3D n = QVector3D::normal(d1, d2);
+            // if (j + 1 == NumSectors/2) // p2 == p3
+                // n = QVector3D::normal(p1 - p4, p1 - p2);
 
             vertices << p1;
             vertices << p2;
             vertices << p3;
 
+            texcoords << t1;
+            texcoords << t2;
+            texcoords << t3;
+
             vertices << p3;
             vertices << p4;
             vertices << p1;
+
+            texcoords << t3;
+            texcoords << t4;
+            texcoords << t1;
 
             normals << n;
             normals << n;
@@ -270,6 +315,15 @@ void Renderer::createHorn(QMatrix4x4 transform, int details)
             normals << n;
             normals << n;
             normals << n;
+
+            // Out of texture
+            texcoords << QVector2D(0, 0);
+            texcoords << QVector2D(0, 0);
+            texcoords << QVector2D(0, 0);
+
+            texcoords << QVector2D(0, 0);
+            texcoords << QVector2D(0, 0);
+            texcoords << QVector2D(0, 0);
         }
     }
 }

@@ -29,6 +29,7 @@
 #include <QtGui/QOpenGLContext>
 #include <QtGui/QOpenGLBuffer>
 #include <QtGui/QOpenGLFunctions>
+#include <QtGui/QOpenGLTexture>
 #include <QtGui/QWindow>
 
 #include <QtCore/qmath.h>
@@ -59,8 +60,10 @@ private:
 
     QVector<QVector3D> vertices;
     QVector<QVector3D> normals;
+    QVector<QVector2D> texcoords;
     int vertexAttr;
     int normalAttr;
+    int texcoordAttr;
     int matrixUniform;
     int colorUniform;
 
@@ -72,6 +75,7 @@ private:
     int m_frame;
     LogoWindow *m_surface;
     QColor m_backgroundColor;
+    QOpenGLTexture *m_texture;
 };
 
 class LogoWindow : public QWindow

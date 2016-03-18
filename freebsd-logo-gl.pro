@@ -8,4 +8,5 @@ SOURCES += \
     main.cpp
 
 RESOURCES += \
-    shaders.qrc 
+    shaders.qrc \
+    textures.qrc
