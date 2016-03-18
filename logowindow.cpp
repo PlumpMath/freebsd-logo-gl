@@ -216,11 +216,7 @@ void Renderer::createSphere()
                 t4.setX(1 - t4.x());
             }
 
-            QVector3D d1 = p1 - p2;
-            QVector3D d2 = p3 - p2;
-            d1.normalize();
-            d2.normalize();
-            QVector3D n = QVector3D::normal(d1, d2);
+            QVector3D n = normalForTriangle(p1, p2, p3);
 
             m_bsdVertices << p1;
             m_bsdVertices << p2;
@@ -291,11 +287,7 @@ void Renderer::createHorn(QMatrix4x4 transform)
             p3 = transform.map(p3);
             p4 = transform.map(p4);
 
-            QVector3D d1 = p1 - p2;
-            QVector3D d2 = p3 - p1;
-            d1.normalize();
-            d2.normalize();
-            QVector3D n = QVector3D::normal(d1, d2);
+            QVector3D n = normalForTriangle(p1, p2, p3);
 
             m_bsdVertices << p1;
             m_bsdVertices << p2;

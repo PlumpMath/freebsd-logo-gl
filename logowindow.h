@@ -57,6 +57,14 @@ private:
     void createHorns();
     void createHorn(QMatrix4x4 transform);
 
+    QVector3D normalForTriangle(const QVector3D &a, const QVector3D &b, const QVector3D &c) {
+            QVector3D d1 = a - b;
+            QVector3D d2 = c - b;
+            d1.normalize();
+            d2.normalize();
+            return QVector3D::normal(d1, d2);
+    }
+
     void createVbo(QOpenGLBuffer &vbo, const QVector<QVector3D> &vertices, const QVector<QVector3D> &normals, const QVector<QVector2D> &texcoords);
 
     QVector3D fromSph(qreal r, qreal theta, qreal phi);
