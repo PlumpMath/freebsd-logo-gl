@@ -60,6 +60,20 @@ void Renderer::setAnimating(LogoWindow *window, bool animating)
     }
 }
 
+
+void Renderer::createVbo(QOpenGLBuffer &vbo, const QVector<QVector3D> &vertices, const QVector<QVector3D> &normals, const QVector<QVector2D> &texcoords)
+{
+    vbo.create();
+    vbo.bind();
+    const int verticesSize = vertices.count() * 3 * sizeof(GLfloat);
+    const int textcoordsSize = vertices.count() * 2 * sizeof(GLfloat);
+    vbo.allocate(verticesSize * 2 + textcoordsSize);
+    vbo.write(0, vertices.constData(), verticesSize);
+    vbo.write(verticesSize, normals.constData(), verticesSize);
+    vbo.write(verticesSize*2, texcoords.constData(), textcoordsSize);
+    vbo.release();
+}
+
 void Renderer::initialize()
 {
     m_program = new QOpenGLShaderProgram(this);
@@ -68,11 +82,17 @@ void Renderer::initialize()
     m_program->link();
     m_program->bind();
 
-    m_texture = new QOpenGLTexture(QImage(":/pi.png"));
+    m_piTexture = new QOpenGLTexture(QImage(":/pi.png"));
 
-    m_texture->setMinificationFilter(QOpenGLTexture::Linear);
-    m_texture->setMagnificationFilter(QOpenGLTexture::Linear);
-    m_texture->setWrapMode(QOpenGLTexture::ClampToBorder);
+    m_piTexture->setMinificationFilter(QOpenGLTexture::Linear);
+    m_piTexture->setMagnificationFilter(QOpenGLTexture::Linear);
+    m_piTexture->setWrapMode(QOpenGLTexture::ClampToBorder);
+
+    m_qtTexture = new QOpenGLTexture(QImage(":/qt.png"));
+
+    m_qtTexture->setMinificationFilter(QOpenGLTexture::Linear);
+    m_qtTexture->setMagnificationFilter(QOpenGLTexture::Linear);
+    m_qtTexture->setWrapMode(QOpenGLTexture::ClampToBorder);
 
     vertexAttr = m_program->attributeLocation("vertex");
     normalAttr = m_program->attributeLocation("normal");
@@ -81,16 +101,7 @@ void Renderer::initialize()
     colorUniform = m_program->uniformLocation("sourceColor");
 
     createGeometry();
-
-    m_vbo.create();
-    m_vbo.bind();
-    const int verticesSize = vertices.count() * 3 * sizeof(GLfloat);
-    const int textcoordsSize = vertices.count() * 2 * sizeof(GLfloat);
-    m_vbo.allocate(verticesSize * 2 + textcoordsSize);
-    m_vbo.write(0, vertices.constData(), verticesSize);
-    m_vbo.write(verticesSize, normals.constData(), verticesSize);
-    m_vbo.write(verticesSize*2, texcoords.constData(), textcoordsSize);
-    m_vbo.release();
+    createVbo(m_bsdVbo, m_bsdVertices, m_bsdNormals, m_bsdTexcoords);
 
     m_program->release();
 }
@@ -116,17 +127,11 @@ void Renderer::render()
     f->glClearColor(m_backgroundColor.redF(), m_backgroundColor.greenF(), m_backgroundColor.blueF(), m_backgroundColor.alphaF());
     f->glEnable(GL_DEPTH_TEST);
 
-    m_texture->bind();
     m_program->bind();
-    m_vbo.bind();
 
     m_program->enableAttributeArray(vertexAttr);
     m_program->enableAttributeArray(normalAttr);
     m_program->enableAttributeArray(texcoordAttr);
-    m_program->setAttributeBuffer(vertexAttr, GL_FLOAT, 0, 3);
-    const int verticesSize = vertices.count() * 3 * sizeof(GLfloat);
-    m_program->setAttributeBuffer(normalAttr, GL_FLOAT, verticesSize, 3);
-    m_program->setAttributeBuffer(texcoordAttr, GL_FLOAT, verticesSize*2, 2);
 
     QMatrix4x4 modelview;
     modelview.rotate(90, -1.0f, 0.0f, 0.0f);
@@ -134,9 +139,15 @@ void Renderer::render()
 
     m_program->setUniformValue(matrixUniform, modelview);
     m_program->setUniformValue(colorUniform, QColor(200, 0, 0, 255));
-    m_program->setUniformValue("texture", 0);
 
-    f->glDrawArrays(GL_TRIANGLES, 0, vertices.size());
+    m_piTexture->bind();
+    m_bsdVbo.bind();
+    m_program->setUniformValue("texture", 0);
+    const int verticesSize = m_bsdVertices.count() * 3 * sizeof(GLfloat);
+    m_program->setAttributeBuffer(vertexAttr, GL_FLOAT, 0, 3);
+    m_program->setAttributeBuffer(normalAttr, GL_FLOAT, verticesSize, 3);
+    m_program->setAttributeBuffer(texcoordAttr, GL_FLOAT, verticesSize*2, 2);
+    f->glDrawArrays(GL_TRIANGLES, 0, m_bsdVertices.size());
 
     m_context->swapBuffers(m_surface);
 
@@ -147,15 +158,19 @@ void Renderer::render()
 
 void Renderer::createGeometry()
 {
-    vertices.clear();
-    normals.clear();
-    texcoords.clear();
-
+    /* Sphere */
+    m_bsdVertices.clear();
+    m_bsdNormals.clear();
+    m_bsdTexcoords.clear();
     createSphere();
     createHorns();
+    for (int i = 0;i < m_bsdVertices.size();i++)
+        m_bsdVertices[i] *= 2.0f;
 
-    for (int i = 0;i < vertices.size();i++)
-        vertices[i] *= 2.0f;
+    /* Qt logo square */
+    m_qtVertices.clear();
+    m_qtNormals.clear();
+    m_qtTexcoords.clear();
 }
 
 void Renderer::createSphere()
@@ -207,29 +222,29 @@ void Renderer::createSphere()
             d2.normalize();
             QVector3D n = QVector3D::normal(d1, d2);
 
-            vertices << p1;
-            vertices << p2;
-            vertices << p3;
+            m_bsdVertices << p1;
+            m_bsdVertices << p2;
+            m_bsdVertices << p3;
 
-            texcoords << t1;
-            texcoords << t2;
-            texcoords << t3;
+            m_bsdTexcoords << t1;
+            m_bsdTexcoords << t2;
+            m_bsdTexcoords << t3;
 
-            vertices << p3;
-            vertices << p4;
-            vertices << p1;
+            m_bsdVertices << p3;
+            m_bsdVertices << p4;
+            m_bsdVertices << p1;
 
-            texcoords << t3;
-            texcoords << t4;
-            texcoords << t1;
+            m_bsdTexcoords << t3;
+            m_bsdTexcoords << t4;
+            m_bsdTexcoords << t1;
 
-            normals << n;
-            normals << n;
-            normals << n;
+            m_bsdNormals << n;
+            m_bsdNormals << n;
+            m_bsdNormals << n;
 
-            normals << n;
-            normals << n;
-            normals << n;
+            m_bsdNormals << n;
+            m_bsdNormals << n;
+            m_bsdNormals << n;
         }
     }
 }
@@ -282,30 +297,30 @@ void Renderer::createHorn(QMatrix4x4 transform)
             d2.normalize();
             QVector3D n = QVector3D::normal(d1, d2);
 
-            vertices << p1;
-            vertices << p2;
-            vertices << p3;
+            m_bsdVertices << p1;
+            m_bsdVertices << p2;
+            m_bsdVertices << p3;
 
-            vertices << p3;
-            vertices << p4;
-            vertices << p1;
+            m_bsdVertices << p3;
+            m_bsdVertices << p4;
+            m_bsdVertices << p1;
 
-            normals << n;
-            normals << n;
-            normals << n;
+            m_bsdNormals << n;
+            m_bsdNormals << n;
+            m_bsdNormals << n;
 
-            normals << n;
-            normals << n;
-            normals << n;
+            m_bsdNormals << n;
+            m_bsdNormals << n;
+            m_bsdNormals << n;
 
             // Trick: pint 0, 0 should be transparent in texture
-            texcoords << QVector2D(0, 0);
-            texcoords << QVector2D(0, 0);
-            texcoords << QVector2D(0, 0);
+            m_bsdTexcoords << QVector2D(0, 0);
+            m_bsdTexcoords << QVector2D(0, 0);
+            m_bsdTexcoords << QVector2D(0, 0);
 
-            texcoords << QVector2D(0, 0);
-            texcoords << QVector2D(0, 0);
-            texcoords << QVector2D(0, 0);
+            m_bsdTexcoords << QVector2D(0, 0);
+            m_bsdTexcoords << QVector2D(0, 0);
+            m_bsdTexcoords << QVector2D(0, 0);
         }
     }
 }

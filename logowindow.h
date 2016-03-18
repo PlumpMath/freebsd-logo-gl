@@ -56,11 +56,21 @@ private:
     void createSphere();
     void createHorns();
     void createHorn(QMatrix4x4 transform);
+
+    void createVbo(QOpenGLBuffer &vbo, const QVector<QVector3D> &vertices, const QVector<QVector3D> &normals, const QVector<QVector2D> &texcoords);
+
     QVector3D fromSph(qreal r, qreal theta, qreal phi);
 
-    QVector<QVector3D> vertices;
-    QVector<QVector3D> normals;
-    QVector<QVector2D> texcoords;
+    QOpenGLBuffer m_bsdVbo;
+    QVector<QVector3D> m_bsdVertices;
+    QVector<QVector3D> m_bsdNormals;
+    QVector<QVector2D> m_bsdTexcoords;
+
+    QOpenGLBuffer m_qtVbo;
+    QVector<QVector3D> m_qtVertices;
+    QVector<QVector3D> m_qtNormals;
+    QVector<QVector2D> m_qtTexcoords;
+
     int vertexAttr;
     int normalAttr;
     int texcoordAttr;
@@ -71,12 +81,13 @@ private:
     QSurfaceFormat m_format;
     QOpenGLContext *m_context;
     QOpenGLShaderProgram *m_program;
-    QOpenGLBuffer m_vbo;
     int m_frame;
     LogoWindow *m_surface;
     QColor m_backgroundColor;
-    QOpenGLTexture *m_texture;
     int m_detalizationLevel;
+
+    QOpenGLTexture *m_piTexture;
+    QOpenGLTexture *m_qtTexture;
 };
 
 class LogoWindow : public QWindow
