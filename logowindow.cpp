@@ -141,6 +141,7 @@ void Renderer::render()
     m_program->enableAttributeArray(m_texcoordAttr);
 
     QMatrix4x4 modelview;
+    modelview.scale(viewSize.height()/(qreal)viewSize.width(), 1.0f, 1.0f);
     modelview.rotate(90, -1.0f, 0.0f, 0.0f);
     modelview.rotate((float)m_frame, 0.0f, 0.0f, -1.0f);
     m_program->setUniformValue(m_matrixUniform, modelview);
@@ -159,7 +160,8 @@ void Renderer::render()
     m_qtTexture->bind();
     m_qtVbo.bind();
     modelview.setToIdentity();
-    modelview.translate(0.7, -0.7, 0);
+    modelview.scale(viewSize.height()/(qreal)viewSize.width(), 1.0f, 1.0f);
+    modelview.translate(viewSize.width()/(qreal)viewSize.height() - 0.3, -0.7, 0);
     m_program->setUniformValue(m_matrixUniform, modelview);
     m_program->setUniformValue(m_colorUniform, QColor(0, 0, 0, 0));
     m_program->setUniformValue(m_textureUniform, 0);
