@@ -29,6 +29,7 @@
 #include <QtGui/QMatrix4x4>
 #include <QtGui/QOpenGLShaderProgram>
 #include <QtGui/QScreen>
+#include <QEasingCurve>
 
 #include <QtCore/qmath.h>
 #include <QTimer>
@@ -47,6 +48,7 @@ Renderer::Renderer(const QSurfaceFormat &format)
 
     m_backgroundColor = QColor::fromRgbF(0.1f, 0.1f, 0.2f, 1.0f);
     m_detalizationLevel = 200;
+
 }
 
 void Renderer::setAnimating(LogoWindow *window, bool animating)
@@ -100,6 +102,7 @@ void Renderer::initialize()
     m_matrixUniform = m_program->uniformLocation("matrix");
     m_colorUniform = m_program->uniformLocation("sourceColor");
     m_textureUniform = m_program->uniformLocation("texture");
+    m_alphaUniform = m_program->uniformLocation("alpha");
 
     createGeometry();
     createVbo(m_bsdVbo, m_bsdVertices, m_bsdNormals, m_bsdTexcoords);
@@ -146,6 +149,7 @@ void Renderer::render()
     m_piTexture->bind();
     m_bsdVbo.bind();
     m_program->setUniformValue(m_textureUniform, 0);
+    m_program->setUniformValue(m_alphaUniform, 1.0f);
     int verticesSize = m_bsdVertices.count() * 3 * sizeof(GLfloat);
     m_program->setAttributeBuffer(m_vertexAttr, GL_FLOAT, 0, 3);
     m_program->setAttributeBuffer(m_normalAttr, GL_FLOAT, verticesSize, 3);
@@ -159,6 +163,28 @@ void Renderer::render()
     m_program->setUniformValue(m_matrixUniform, modelview);
     m_program->setUniformValue(m_colorUniform, QColor(0, 0, 0, 0));
     m_program->setUniformValue(m_textureUniform, 0);
+    // blink Qt logo 3 times during last 60 degrees of turn
+    const int flickerPart = 60;
+    const int period = 457;
+    int degree = m_frame % period;
+    GLfloat qtAlpha = 1.0;
+    QEasingCurve easing(QEasingCurve::OutInBounce);
+
+    if (degree < flickerPart) {
+        qtAlpha = easing.valueForProgress(degree/(float)flickerPart);
+    }
+
+    if (degree >= period - flickerPart) {
+        qtAlpha = easing.valueForProgress((degree + flickerPart - period)/(float)flickerPart);
+        qtAlpha = 1 - qtAlpha;
+    }
+
+    if (qtAlpha > 1)
+        qtAlpha = 1;
+    if (qtAlpha < 0)
+        qtAlpha = 0;
+
+    m_program->setUniformValue(m_alphaUniform, qtAlpha);
     verticesSize = m_qtVertices.count() * 3 * sizeof(GLfloat);
     m_program->setAttributeBuffer(m_vertexAttr, GL_FLOAT, 0, 3);
     m_program->setAttributeBuffer(m_normalAttr, GL_FLOAT, verticesSize, 3);

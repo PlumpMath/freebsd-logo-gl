@@ -86,6 +86,7 @@ private:
     int m_matrixUniform;
     int m_colorUniform;
     int m_textureUniform;
+    int m_alphaUniform;
 
     bool m_initialized;
     QSurfaceFormat m_format;
