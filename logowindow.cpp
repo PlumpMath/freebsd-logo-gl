@@ -94,11 +94,12 @@ void Renderer::initialize()
     m_qtTexture->setMagnificationFilter(QOpenGLTexture::Linear);
     m_qtTexture->setWrapMode(QOpenGLTexture::ClampToBorder);
 
-    vertexAttr = m_program->attributeLocation("vertex");
-    normalAttr = m_program->attributeLocation("normal");
-    texcoordAttr = m_program->attributeLocation("texcoord");
-    matrixUniform = m_program->uniformLocation("matrix");
-    colorUniform = m_program->uniformLocation("sourceColor");
+    m_vertexAttr = m_program->attributeLocation("vertex");
+    m_normalAttr = m_program->attributeLocation("normal");
+    m_texcoordAttr = m_program->attributeLocation("texcoord");
+    m_matrixUniform = m_program->uniformLocation("matrix");
+    m_colorUniform = m_program->uniformLocation("sourceColor");
+    m_textureUniform = m_program->uniformLocation("texture");
 
     createGeometry();
     createVbo(m_bsdVbo, m_bsdVertices, m_bsdNormals, m_bsdTexcoords);
@@ -132,36 +133,36 @@ void Renderer::render()
 
     m_program->bind();
 
-    m_program->enableAttributeArray(vertexAttr);
-    m_program->enableAttributeArray(normalAttr);
-    m_program->enableAttributeArray(texcoordAttr);
+    m_program->enableAttributeArray(m_vertexAttr);
+    m_program->enableAttributeArray(m_normalAttr);
+    m_program->enableAttributeArray(m_texcoordAttr);
 
     QMatrix4x4 modelview;
     modelview.rotate(90, -1.0f, 0.0f, 0.0f);
     modelview.rotate((float)m_frame, 0.0f, 0.0f, -1.0f);
-    m_program->setUniformValue(matrixUniform, modelview);
-    m_program->setUniformValue(colorUniform, QColor(200, 0, 0, 255));
+    m_program->setUniformValue(m_matrixUniform, modelview);
+    m_program->setUniformValue(m_colorUniform, QColor(200, 0, 0, 255));
 
     m_piTexture->bind();
     m_bsdVbo.bind();
-    m_program->setUniformValue("texture", 0);
+    m_program->setUniformValue(m_textureUniform, 0);
     int verticesSize = m_bsdVertices.count() * 3 * sizeof(GLfloat);
-    m_program->setAttributeBuffer(vertexAttr, GL_FLOAT, 0, 3);
-    m_program->setAttributeBuffer(normalAttr, GL_FLOAT, verticesSize, 3);
-    m_program->setAttributeBuffer(texcoordAttr, GL_FLOAT, verticesSize*2, 2);
+    m_program->setAttributeBuffer(m_vertexAttr, GL_FLOAT, 0, 3);
+    m_program->setAttributeBuffer(m_normalAttr, GL_FLOAT, verticesSize, 3);
+    m_program->setAttributeBuffer(m_texcoordAttr, GL_FLOAT, verticesSize*2, 2);
     f->glDrawArrays(GL_TRIANGLES, 0, m_bsdVertices.size());
 
     m_qtTexture->bind();
     m_qtVbo.bind();
     modelview.setToIdentity();
     modelview.translate(0.7, -0.7, 0);
-    m_program->setUniformValue(matrixUniform, modelview);
-    m_program->setUniformValue(colorUniform, QColor(0, 0, 0, 0));
-    m_program->setUniformValue("texture", 0);
+    m_program->setUniformValue(m_matrixUniform, modelview);
+    m_program->setUniformValue(m_colorUniform, QColor(0, 0, 0, 0));
+    m_program->setUniformValue(m_textureUniform, 0);
     verticesSize = m_qtVertices.count() * 3 * sizeof(GLfloat);
-    m_program->setAttributeBuffer(vertexAttr, GL_FLOAT, 0, 3);
-    m_program->setAttributeBuffer(normalAttr, GL_FLOAT, verticesSize, 3);
-    m_program->setAttributeBuffer(texcoordAttr, GL_FLOAT, verticesSize*2, 2);
+    m_program->setAttributeBuffer(m_vertexAttr, GL_FLOAT, 0, 3);
+    m_program->setAttributeBuffer(m_normalAttr, GL_FLOAT, verticesSize, 3);
+    m_program->setAttributeBuffer(m_texcoordAttr, GL_FLOAT, verticesSize*2, 2);
     f->glDrawArrays(GL_TRIANGLES, 0, m_qtVertices.size());
 
     m_context->swapBuffers(m_surface);

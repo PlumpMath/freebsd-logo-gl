@@ -80,11 +80,12 @@ private:
     QVector<QVector3D> m_qtNormals;
     QVector<QVector2D> m_qtTexcoords;
 
-    int vertexAttr;
-    int normalAttr;
-    int texcoordAttr;
-    int matrixUniform;
-    int colorUniform;
+    int m_vertexAttr;
+    int m_normalAttr;
+    int m_texcoordAttr;
+    int m_matrixUniform;
+    int m_colorUniform;
+    int m_textureUniform;
 
     bool m_initialized;
     QSurfaceFormat m_format;
