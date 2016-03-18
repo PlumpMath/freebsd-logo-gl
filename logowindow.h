@@ -54,6 +54,7 @@ private:
 
     void createGeometry();
     void createSphere();
+    void createSquare();
     void createHorns();
     void createHorn(QMatrix4x4 transform);
 
