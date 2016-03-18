@@ -169,7 +169,7 @@ void Renderer::createSphere()
 {
     const qreal Pi = 3.14159f;
     const qreal r = 0.30;
-    const int NumSectors = 360*3;
+    const int NumSectors = 200;
 
     // QMatrix4x4 rotation;
     // rotation.rotate(90, 1.0f, 0.0f, 0.0f);
@@ -202,7 +202,7 @@ void Renderer::createSphere()
                 t1 = (QVector2D(angle1, angle3) - origin)/qDegreesToRadians(60.);
                 t2 = (QVector2D(angle1, angle4) - origin)/qDegreesToRadians(60.);
                 t3 = (QVector2D(angle2, angle4) - origin)/qDegreesToRadians(60.);
-                t4 = (QVector2D(angle1, angle3) - origin)/qDegreesToRadians(60.);
+                t4 = (QVector2D(angle2, angle3) - origin)/qDegreesToRadians(60.);
             }
 
             // p1 = p1 * rotation;
