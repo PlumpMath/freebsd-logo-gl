@@ -130,6 +130,9 @@ void Renderer::render()
     f->glViewport(0, 0, viewSize.width() * m_surface->devicePixelRatio(), viewSize.height() * m_surface->devicePixelRatio());
     f->glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     f->glClearColor(m_backgroundColor.redF(), m_backgroundColor.greenF(), m_backgroundColor.blueF(), m_backgroundColor.alphaF());
+    f->glFrontFace(GL_CCW);
+    f->glCullFace(GL_FRONT);
+    f->glEnable(GL_CULL_FACE);
     f->glEnable(GL_DEPTH_TEST);
     f->glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
     f->glEnable( GL_BLEND );
