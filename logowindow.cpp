@@ -358,7 +358,12 @@ void Renderer::createHorn(QMatrix4x4 transform)
         while ( r*r*a < 0.5) {
             qreal r1 = r;
             qreal r2 = r + r_step;
-            r += r_step;
+#if 0
+            while (((r2*r2 - r1*r1)*a < r_step) && (r2*r2*a < 0.5)) {
+                r2 += r_step;
+            }
+#endif
+            r = r2;
 
             QVector3D p1(r1*qSin(angle1), r1*qCos(angle1), r1*r1*a);
             QVector3D p2(r2*qSin(angle1), r2*qCos(angle1), r2*r2*a);
